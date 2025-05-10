@@ -25,7 +25,7 @@
 | Name                   | GitHub Username | Contribution                                     |
 |------------------------|-----------------|--------------------------------------------------|
 | Damla Karpus           | DamlaKarpus     | ER Diagram and Requirement Document              |
-| Ezgi Komurcu           | ezgikomurcu     | System Design Document and Use Case Design       |
+| Ezgi Kömürcü           | ezgikomurcu     | System Design Document and Use Case Design       |
 | Ahmet Şamil Kırkgöz    | (no GitHub yet) | Deployment Plan Document and MySQL Installation  |
 | Muhammed Hanzala Akbaş | hanzalamf1      | All SQL Scripts and Query Writing                |
 
