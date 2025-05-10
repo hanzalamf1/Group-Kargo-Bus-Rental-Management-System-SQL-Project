@@ -1,6 +1,7 @@
 # 🚍 Kargo Bus Rental Management System
 ---
-## ER Diagram
+## ER Diagram ![erdiagram](https://github.com/user-attachments/assets/1fdc3a5c-d0de-4927-87d4-016f110cd918)
+
 ---
 ## 📁 File Paths
 
