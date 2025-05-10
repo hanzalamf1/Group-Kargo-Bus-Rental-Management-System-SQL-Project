@@ -1,0 +1,246 @@
+-- 1. Generally
+SELECT 
+    r.route_id,
+    b.bus_id,
+    f.firm_id,
+    f.company_name AS firm_name,
+    t.starting_point,
+    t.destination,
+    ROUND(t.ticket_price * r.passenger_count * c.ticket_comission, 2) AS ticket_commission,
+    ROUND(b.passenger_capacity * t.ticket_price * c.seat_comission, 2) AS seat_commission,
+    ROUND(c.monthly_pricing / 30, 2) AS daily_rental,
+    ROUND(t.distance * c.km_commission / 100, 2) AS km_commission,
+    t.distance AS trip_distance,
+    r.owner_income,
+    ROUND(r.total_income - r.expenses - r.owner_income, 2) AS firm_profit,
+    r.passenger_count,
+    ROUND(t.ticket_price, 2) AS ticket_price,
+    ROUND(r.total_income, 2) AS total_income,
+    ROUND(r.expenses, 2) AS expenses
+FROM 
+    route r
+JOIN 
+    trip t ON r.trip_id = t.trip_id
+JOIN 
+    bus b ON r.bus_id = b.bus_id
+JOIN 
+    contract c ON c.bus_id = b.bus_id
+JOIN 
+    firm f ON c.firm_id = f.firm_id
+ORDER BY 
+    r.route_id;
+
+-- 2. Belirli Bir Rotadaki Yolcuların Listesi
+SELECT
+    p.route_id,
+    p.passenger_id,
+    p.passenger_name,
+    p.passenger_surname    
+FROM 
+    passenger p
+JOIN 
+    route r ON p.route_id = r.route_id
+WHERE 
+    r.route_id = 19;
+    
+-- 3. Her Firmanın Toplam Karı (Profit)
+SELECT 
+    f.company_name,
+    COUNT(DISTINCT b.bus_id) AS total_buses_rented,
+    SUM(r.total_income) AS total_income,
+    SUM(r.expenses) AS total_expenses,
+    SUM(r.owner_income) AS total_owner_income,
+    SUM(r.total_income - r.expenses - r.owner_income) AS firm_profit
+FROM 
+    firm f
+JOIN 
+    contract c ON f.firm_id = c.firm_id
+JOIN 
+    bus b ON c.bus_id = b.bus_id
+JOIN 
+    route r ON b.bus_id = r.bus_id
+GROUP BY 
+    f.firm_id;
+
+    
+-- 4. Belirli Bir Tarihteki Tüm Seyahatler ve Fiyatları
+SELECT 
+    t.starting_point,
+    t.destination,
+    t.ticket_price,
+    t.departure_time,
+    t.arrival_time
+FROM 
+    trip t
+WHERE 
+    DATE(t.departure_time) = '2025-04-01';
+ 
+-- 5. Yolcu Başına Gelir - Gider 
+SELECT 
+    r.route_id,
+    f.company_name,
+    r.passenger_count,
+    ROUND(IF(r.passenger_count > 0, r.expenses / r.passenger_count, 0), 2) AS expenses_per_passenger,
+    ROUND(IF(r.passenger_count > 0, r.owner_income / r.passenger_count, 0), 2) AS owner_income_per_passenger,
+    ROUND(IF(r.passenger_count > 0, (r.total_income - r.expenses) / r.passenger_count, 0), 2) AS firm_income_per_passenger
+FROM 
+    route r
+JOIN 
+    bus b ON r.bus_id = b.bus_id
+JOIN 
+    contract c ON b.bus_id = c.bus_id
+JOIN 
+    firm f ON c.firm_id = f.firm_id
+ORDER BY 
+    r.route_id;
+
+-- 6. ROI and Profit Margin
+SELECT 
+    f.company_name,
+    ROUND(SUM(r.total_income), 2) AS total_income,
+    ROUND(SUM(r.expenses), 2) AS total_expenses,
+    ROUND(SUM(r.total_income - r.expenses), 2) AS total_profit,
+    ROUND(SUM(r.total_income) / SUM(r.expenses), 2) AS roi, 
+    ROUND(SUM(r.total_income - r.expenses) / COUNT(DISTINCT r.route_id), 2) AS avg_profit_per_route,
+    ROUND((SUM(r.total_income - r.expenses) / SUM(r.total_income)) * 100, 2) AS profit_margin
+FROM 
+    route r
+JOIN 
+    bus b ON r.bus_id = b.bus_id
+JOIN 
+    contract c ON b.bus_id = c.bus_id
+JOIN 
+    firm f ON c.firm_id = f.firm_id
+GROUP BY 
+    f.firm_id
+ORDER BY 
+    roi DESC;
+
+-- 7. Tüm Firmaların Sözleşme Detayları ile Araç Bilgileri
+SELECT 
+    c.contract_id,
+    f.company_name,
+    f.authorized_person,
+    f.phone,
+    b.plate,
+    b.brand,
+    b.model,
+    b.passenger_capacity,
+    c.monthly_pricing,
+    c.seat_comission,
+    c.ticket_comission,
+    c.km_commission
+FROM 
+    contract c
+JOIN 
+    firm f ON c.firm_id = f.firm_id
+JOIN 
+    bus b ON c.bus_id = b.bus_id
+ORDER BY 
+    f.company_name;
+
+-- 8. Firma Başına Ortalama Sözleşme Fiyatı ve Komisyon Oranları
+SELECT 
+    f.company_name,
+    COUNT(c.contract_id) AS total_contracts,
+    ROUND(AVG(c.monthly_pricing), 2) AS avg_monthly_price,
+    ROUND(AVG(c.seat_comission), 2) AS avg_seat_comm,
+    ROUND(AVG(c.ticket_comission), 2) AS avg_ticket_comm,
+    ROUND(AVG(c.km_commission), 2) AS avg_km_comm
+FROM 
+    contract c
+JOIN 
+    firm f ON c.firm_id = f.firm_id
+GROUP BY 
+    f.firm_id;
+
+-- 9. Aylık Kiralama Bedeli 10.000’den Yüksek Sözleşmeler
+SELECT 
+    c.contract_id,
+    f.company_name,
+    b.plate,
+    c.monthly_pricing
+FROM 
+    contract c
+JOIN 
+    firm f ON c.firm_id = f.firm_id
+JOIN 
+    bus b ON c.bus_id = b.bus_id
+WHERE 
+    c.monthly_pricing > 10000
+ORDER BY 
+    c.monthly_pricing DESC;
+
+-- 10. En Yüksek Sahip Geliri Olan 5 Sefer
+SELECT 
+    r.route_id,
+    t.starting_point,
+    t.destination,
+    r.passenger_count,
+    t.distance,
+    ROUND(t.ticket_price, 2) AS ticket_price,
+    ROUND(r.owner_income, 2) AS owner_income,
+    ROUND(r.total_income, 2) AS total_income,
+    ROUND(r.expenses, 2) AS expenses
+FROM 
+    route r
+JOIN 
+    trip t ON r.trip_id = t.trip_id
+ORDER BY 
+    r.owner_income DESC
+LIMIT 5;
+
+-- 11. Sahip Geliri Verimliliği: Araç Değerine Göre Gelir Verimlilik Analizi
+SELECT 
+    r.route_id,
+    b.bus_id,
+    b.brand,
+    b.model,
+    b.vehicle_value,
+    ROUND(r.owner_income, 2) AS owner_income,
+    ROUND(r.owner_income / b.vehicle_value, 4) AS income_efficiency_ratio,
+    t.starting_point,
+    t.destination,
+    t.distance,
+    r.passenger_count
+FROM 
+    route r
+JOIN 
+    bus b ON r.bus_id = b.bus_id
+JOIN 
+    trip t ON r.trip_id = t.trip_id
+WHERE 
+    b.vehicle_value > 0
+ORDER BY 
+    income_efficiency_ratio DESC;
+
+
+-- 12. Toplam Kazanca Katkı Analizi: Sahip Gelirinin Toplam Gelire Oranı
+SELECT 
+    r.route_id,
+    f.company_name AS firm_name,
+    t.starting_point,
+    t.destination,
+    ROUND(r.total_income, 2) AS total_income,
+    ROUND(r.expenses, 2) AS expenses,
+    ROUND(r.owner_income, 2) AS owner_income,
+    ROUND(GREATEST(r.total_income - r.expenses - r.owner_income, 0), 2) AS firm_profit,
+    ROUND(r.owner_income / r.total_income * 100, 2) AS owner_income_percent,
+    ROUND(r.expenses / r.total_income * 100, 2) AS expense_percent,
+    ROUND((r.passenger_count / b.passenger_capacity) * 100, 2) AS passenger_fill_percent,
+    CASE 
+        WHEN (r.total_income - r.expenses - r.owner_income) < 0 THEN 'LOSS'
+        ELSE 'PROFIT'
+    END AS status
+FROM 
+    route r
+JOIN 
+    trip t ON r.trip_id = t.trip_id
+JOIN 
+    bus b ON r.bus_id = b.bus_id
+JOIN 
+    contract c ON c.bus_id = b.bus_id
+JOIN 
+    firm f ON c.firm_id = f.firm_id
+ORDER BY 
+    status DESC, firm_profit DESC;
